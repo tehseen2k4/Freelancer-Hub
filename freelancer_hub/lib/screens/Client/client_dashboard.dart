@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../layouts/dashboard_layout.dart';
+import 'client_post_job.dart';
 
 class ClientDashboard extends StatelessWidget {
   const ClientDashboard({super.key});
@@ -59,7 +60,14 @@ class ClientDashboard extends StatelessWidget {
                     'Post a Job',
                     'Find the perfect freelancer',
                     Icons.add_circle_outline,
-                    () {},
+                    () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ClientPostJob(selectedIndex: 6),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
