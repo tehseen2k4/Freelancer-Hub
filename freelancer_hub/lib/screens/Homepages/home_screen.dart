@@ -1,12 +1,38 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
+import '../../models/user_model.dart';
 import '../Client/client_dashboard.dart';
 import '../Freelancer/freelancer_dashboard.dart';
 import '../Admin/admin_dashboard.dart';
 import 'find_work_screen.dart';
 import 'find_talent_screen.dart';
+import '../../models/client_profile.dart';
+import '../../models/freelancer_profile.dart';
+import '../../services/profile_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final AuthService _authService = AuthService();
+  UserModel? _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final user = _authService.currentUser;
+    setState(() {
+      _currentUser = user;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +40,14 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
-        child: ModernNavbar(),
+        child: ModernNavbar(
+          currentUser: _currentUser,
+          onUserChanged: (user) {
+            setState(() {
+              _currentUser = user;
+            });
+          },
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -750,15 +783,16 @@ class HomeScreen extends StatelessWidget {
 }
 
 class ModernNavbar extends StatefulWidget {
-  const ModernNavbar({super.key});
+  const ModernNavbar({super.key, required this.currentUser, required this.onUserChanged});
+
+  final UserModel? currentUser;
+  final Function(UserModel?) onUserChanged;
 
   @override
   State<ModernNavbar> createState() => _ModernNavbarState();
 }
 
 class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderStateMixin {
-  int _selectedIndex = 0;
-  String? _userRole; // null means not logged in
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -782,9 +816,15 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
   }
 
   void _handleLogin(String role) {
-    setState(() {
-      _userRole = role;
-    });
+    final userRole = role == 'client' ? UserRole.client : UserRole.freelancer;
+    
+    widget.onUserChanged(UserModel(
+      uid: 'temp_uid', // This will be replaced with actual Firebase UID
+      email: 'temp@email.com', // This will be replaced with actual email
+      role: userRole,
+      createdAt: DateTime.now(),
+      lastLoginAt: DateTime.now(),
+    ));
     
     // Navigate to the appropriate dashboard based on role
     switch (role) {
@@ -801,14 +841,6 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
           context,
           MaterialPageRoute(
             builder: (context) => const FreelancerDashboard(),
-          ),
-        );
-        break;
-      case 'admin':
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const AdminDashboard(),
           ),
         );
         break;
@@ -880,7 +912,7 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
               ),
             ),
             // Navigation Items based on user role
-            if (_userRole == null) ...[
+            if (widget.currentUser == null) ...[
               // Public navigation
               Row(
                 children: [
@@ -890,29 +922,24 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
                   _buildNavItem('About Us', 3, () {}),
                 ],
               ),
-            ] else if (_userRole == 'admin') ...[
-              // Admin navigation
+            ] else ...[
+              // User navigation based on role
               Row(
                 children: [
                   _buildNavItem('Dashboard', 0, () {}),
-                  _buildNavItem('Users', 1, () {}),
-                  _buildNavItem('Reports', 2, () {}),
-                  _buildNavItem('Settings', 3, () {}),
-                ],
-              ),
-            ] else if (_userRole == 'job_poster') ...[
-              // Job Poster navigation
-              Row(
-                children: [
-                  _buildNavItem('Dashboard', 0, () {}),
-                  _buildNavItem('Post Job', 1, () {}),
-                  _buildNavItem('My Jobs', 2, () {}),
+                  if (widget.currentUser!.role == UserRole.client) ...[
+                    _buildNavItem('Post Job', 1, () {}),
+                    _buildNavItem('My Jobs', 2, () {}),
+                  ] else ...[
+                    _buildNavItem('Find Work', 1, _navigateToFindWork),
+                    _buildNavItem('My Proposals', 2, () {}),
+                  ],
                   _buildNavItem('Messages', 3, () {}),
                 ],
               ),
             ],
             // Auth Buttons or User Profile
-            if (_userRole == null) ...[
+            if (widget.currentUser == null) ...[
               Row(
                 children: [
                   _buildLoginButton(),
@@ -959,8 +986,7 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
               ),
               const SizedBox(width: 8),
               Text(
-                _userRole == 'admin' ? 'Admin' :
-                _userRole == 'job_poster' ? 'Job Poster' : 'Job Seeker',
+                widget.currentUser!.role == UserRole.client ? 'Client' : 'Freelancer',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -981,14 +1007,12 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
   }
 
   Widget _buildNavItem(String title, int index, VoidCallback onTap) {
-    bool isSelected = _selectedIndex == index;
+    bool isSelected = _controller.value.floor() == index;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
-          setState(() {
-            _selectedIndex = index;
-          });
+          _controller.forward(from: 0);
           if (title == 'Find Work') {
             Navigator.push(
               context,
@@ -1363,268 +1387,333 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
     final formKey = GlobalKey<FormState>();
     bool isPasswordVisible = false;
     bool isConfirmPasswordVisible = false;
+    bool isLoading = false;
+    final AuthService _authService = AuthService();
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          width: 500,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Header with role icon and close button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6C63FF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 500,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2D2D2D),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with role icon and close button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6C63FF).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                role == 'client' ? Icons.business :
+                                role == 'freelancer' ? Icons.work :
+                                Icons.admin_panel_settings,
+                                color: const Color(0xFF6C63FF),
+                                size: 24,
+                              ),
                             ),
-                            child: Icon(
-                              role == 'client' ? Icons.business :
-                              role == 'freelancer' ? Icons.work :
-                              Icons.admin_panel_settings,
-                              color: const Color(0xFF6C63FF),
-                              size: 24,
+                            const SizedBox(width: 12),
+                            Text(
+                              'Sign Up as ${role.toUpperCase()}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Sign Up as ${role.toUpperCase()}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Welcome message
-                  Text(
-                    'Create your account',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Email field
-                  TextFormField(
-                    controller: emailController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: TextStyle(color: Colors.grey[400]),
-                      prefixIcon: Icon(Icons.email_outlined, color: Colors.grey[400]),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[700]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF1A1A1A),
-                      errorStyle: const TextStyle(color: Colors.redAccent),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Password field
-                  TextFormField(
-                    controller: passwordController,
-                    style: const TextStyle(color: Colors.white),
-                    obscureText: !isPasswordVisible,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      labelStyle: TextStyle(color: Colors.grey[400]),
-                      prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[400]),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.grey[400],
+                          ],
                         ),
-                        onPressed: () {
-                          isPasswordVisible = !isPasswordVisible;
-                        },
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[700]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF1A1A1A),
-                      errorStyle: const TextStyle(color: Colors.redAccent),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Confirm Password field
-                  TextFormField(
-                    controller: confirmPasswordController,
-                    style: const TextStyle(color: Colors.white),
-                    obscureText: !isConfirmPasswordVisible,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm Password',
-                      labelStyle: TextStyle(color: Colors.grey[400]),
-                      prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[400]),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.grey[400],
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                        onPressed: () {
-                          isConfirmPasswordVisible = !isConfirmPasswordVisible;
-                        },
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[700]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF1A1A1A),
-                      errorStyle: const TextStyle(color: Colors.redAccent),
+                      ],
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
-                      }
-                      if (value != passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  // Sign up button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          // TODO: Implement actual signup logic here
-                          Navigator.pop(context);
-                          _showProfileCreationForm(context, role);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6C63FF),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
+                    const SizedBox(height: 24),
+                    // Welcome message
+                    Text(
+                      'Create your account',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Email field
+                    TextFormField(
+                      controller: emailController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        labelStyle: TextStyle(color: Colors.grey[400]),
+                        prefixIcon: Icon(Icons.email_outlined, color: Colors.grey[400]),
+                        enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[700]!),
                         ),
-                        elevation: 0,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1A1A1A),
+                        errorStyle: const TextStyle(color: Colors.redAccent),
                       ),
-                      child: const Text(
-                        'Create Account',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Password field
+                    TextFormField(
+                      controller: passwordController,
+                      style: const TextStyle(color: Colors.white),
+                      obscureText: !isPasswordVisible,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        labelStyle: TextStyle(color: Colors.grey[400]),
+                        prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[400]),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                            color: Colors.grey[400],
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              isPasswordVisible = !isPasswordVisible;
+                            });
+                          },
                         ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[700]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1A1A1A),
+                        errorStyle: const TextStyle(color: Colors.redAccent),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        if (value.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Confirm Password field
+                    TextFormField(
+                      controller: confirmPasswordController,
+                      style: const TextStyle(color: Colors.white),
+                      obscureText: !isConfirmPasswordVisible,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        labelStyle: TextStyle(color: Colors.grey[400]),
+                        prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[400]),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                            color: Colors.grey[400],
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              isConfirmPasswordVisible = !isConfirmPasswordVisible;
+                            });
+                          },
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[700]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF1A1A1A),
+                        errorStyle: const TextStyle(color: Colors.redAccent),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please confirm your password';
+                        }
+                        if (value != passwordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // Sign up button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : () async {
+                          if (formKey.currentState!.validate()) {
+                            setState(() {
+                              isLoading = true;
+                            });
+                            try {
+                              print('Starting registration process...');
+                              print('Email: ${emailController.text}');
+                              print('Role: $role');
+                              
+                              final userRole = role == 'client' ? UserRole.client : UserRole.freelancer;
+                              print('Converted role: $userRole');
+                              
+                              print('Calling registerWithEmailAndPassword...');
+                              final user = await _authService.registerWithEmailAndPassword(
+                                emailController.text,
+                                passwordController.text,
+                                userRole,
+                              );
+                              print('Registration successful! User ID: ${user.uid}');
+                              
+                              if (mounted) {
+                                Navigator.pop(context);
+                                _showProfileCreationForm(context, role);
+                              }
+                            } catch (e, stackTrace) {
+                              print('Registration error occurred:');
+                              print('Error: $e');
+                              print('Stack trace: $stackTrace');
+                              
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Registration failed: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                    duration: const Duration(seconds: 5),
+                                    action: SnackBarAction(
+                                      label: 'Dismiss',
+                                      textColor: Colors.white,
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  isLoading = false;
+                                });
+                              }
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6C63FF),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Login link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Already have an account? ',
+                    const SizedBox(height: 16),
+                    // Login link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Already have an account? ',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showRoleSelectionDialog(context, true);
+                          },
+                          child: const Text(
+                            'Login',
+                            style: TextStyle(
+                              color: Color(0xFF6C63FF),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Temporary bypass button for testing
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showProfileCreationForm(context, role);
+                      },
+                      child: Text(
+                        'Skip to Profile Form (Testing)',
                         style: TextStyle(
                           color: Colors.grey[400],
                           fontSize: 14,
+                          fontStyle: FontStyle.italic,
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _showRoleSelectionDialog(context, true);
-                        },
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(
-                            color: Color(0xFF6C63FF),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Temporary bypass button for testing
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showProfileCreationForm(context, role);
-                    },
-                    child: Text(
-                      'Skip to Profile Form (Testing)',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1661,6 +1750,11 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
       'Machine Learning', 'Data Science', 'Project Management', 'Agile'
     ];
     final List<String> selectedSkills = [];
+    
+    // Services
+    final ProfileService _profileService = ProfileService();
+    final AuthService _authService = AuthService();
+    bool isLoading = false;
 
     showDialog(
       context: context,
@@ -2191,16 +2285,85 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
                         else
                           const SizedBox(width: 80),
                         ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             if (formKey.currentState!.validate()) {
                               if (currentStep < (role == 'client' ? 2 : 1)) {
                                 setState(() {
                                   currentStep++;
                                 });
                               } else {
-                                // TODO: Implement profile creation logic here
-                                Navigator.pop(context);
-                                _handleLogin(role);
+                                setState(() {
+                                  isLoading = true;
+                                });
+                                
+                                try {
+                                  final now = DateTime.now();
+                                  
+                                  if (role == 'client') {
+                                    final clientProfile = ClientProfile(
+                                      uid: _authService.currentUser!.uid,
+                                      name: nameController.text,
+                                      email: emailController.text,
+                                      phone: phoneController.text,
+                                      location: locationController.text,
+                                      companyName: companyNameController.text,
+                                      companySize: companySizeController.text,
+                                      industry: industryController.text,
+                                      website: websiteController.text,
+                                      bio: bioController.text,
+                                      createdAt: now,
+                                      updatedAt: now,
+                                    );
+                                    
+                                    await _profileService.createClientProfile(clientProfile);
+                                  } else {
+                                    final freelancerProfile = FreelancerProfile(
+                                      uid: _authService.currentUser!.uid,
+                                      name: nameController.text,
+                                      email: emailController.text,
+                                      phone: phoneController.text,
+                                      location: locationController.text,
+                                      title: titleController.text,
+                                      skills: selectedSkills,
+                                      yearsOfExperience: int.parse(experienceController.text),
+                                      hourlyRate: double.parse(hourlyRateController.text),
+                                      bio: bioController.text,
+                                      createdAt: now,
+                                      updatedAt: now,
+                                    );
+                                    
+                                    await _profileService.createFreelancerProfile(freelancerProfile);
+                                  }
+                                  
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    _handleLogin(role);
+                                  }
+                                } catch (e) {
+                                  print('Error creating profile: $e');
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to create profile: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 5),
+                                        action: SnackBarAction(
+                                          label: 'Dismiss',
+                                          textColor: Colors.white,
+                                          onPressed: () {
+                                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      isLoading = false;
+                                    });
+                                  }
+                                }
                               }
                             }
                           },
@@ -2212,14 +2375,23 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
                             ),
                             elevation: 0,
                           ),
-                          child: Text(
-                            currentStep < (role == 'client' ? 2 : 1) ? 'Next' : 'Complete Profile',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'Complete Profile',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ],
                     ),

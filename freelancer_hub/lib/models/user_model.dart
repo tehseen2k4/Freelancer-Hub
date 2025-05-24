@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 enum UserRole {
   client,
@@ -58,6 +59,17 @@ class UserModel {
       clientProfileId: map['clientProfileId'],
       freelancerProfileId: map['freelancerProfileId'],
       isActive: map['isActive'] ?? true,
+    );
+  }
+
+  // Create UserModel from Firebase User
+  factory UserModel.fromFirebaseUser(User user, UserRole role) {
+    return UserModel(
+      uid: user.uid,
+      email: user.email ?? '',
+      role: role,
+      createdAt: DateTime.now(),
+      lastLoginAt: DateTime.now(),
     );
   }
 

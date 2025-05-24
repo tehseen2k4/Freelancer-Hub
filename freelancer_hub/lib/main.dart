@@ -1,7 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/Homepages/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    // Check if Firebase is already initialized
+    if (Firebase.apps.isEmpty) {
+      print('Initializing Firebase...');
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyDTd5cRhght5c4uBf62QFOEBwNzu-gsEcE",
+          authDomain: "freelancerhub-cad60.firebaseapp.com",
+          projectId: "freelancerhub-cad60",
+          storageBucket: "freelancerhub-cad60.appspot.com",
+          messagingSenderId: "686749222872",
+          appId: "1:686749222872:android:89bcabb55f41b8d7da94ad",
+        ),
+      );
+      print('Firebase initialized successfully');
+      
+      // Verify Firebase initialization
+      final app = Firebase.app();
+      print('Firebase app name: ${app.name}');
+      print('Firebase options: ${app.options.apiKey}');
+    } else {
+      print('Firebase already initialized');
+    }
+  } catch (e, stackTrace) {
+    print('Failed to initialize Firebase: $e');
+    print('Stack trace: $stackTrace');
+  }
   runApp(const MyApp());
 }
 
