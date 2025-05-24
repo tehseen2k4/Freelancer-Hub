@@ -1608,6 +1608,22 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  // Temporary bypass button for testing
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showProfileCreationForm(context, role);
+                    },
+                    child: Text(
+                      'Skip to Profile Form (Testing)',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1619,279 +1635,642 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
 
   void _showProfileCreationForm(BuildContext context, String role) {
     final formKey = GlobalKey<FormState>();
+    int currentStep = 0;
     final TextEditingController nameController = TextEditingController();
+    final TextEditingController emailController = TextEditingController();
     final TextEditingController phoneController = TextEditingController();
+    final TextEditingController locationController = TextEditingController();
     final TextEditingController bioController = TextEditingController();
-    final TextEditingController skillsController = TextEditingController();
-    final TextEditingController companyController = TextEditingController();
+    
+    // Client specific controllers
+    final TextEditingController companyNameController = TextEditingController();
+    final TextEditingController companySizeController = TextEditingController();
+    final TextEditingController industryController = TextEditingController();
     final TextEditingController websiteController = TextEditingController();
+    
+    // Freelancer specific controllers
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController experienceController = TextEditingController();
+    final TextEditingController hourlyRateController = TextEditingController();
+    
+    // Skills selection
+    final List<String> availableSkills = [
+      'Flutter', 'Dart', 'React', 'Node.js', 'Python', 'Java', 'JavaScript',
+      'TypeScript', 'HTML', 'CSS', 'UI/UX Design', 'Mobile Development',
+      'Web Development', 'Database Design', 'DevOps', 'Cloud Computing',
+      'Machine Learning', 'Data Science', 'Project Management', 'Agile'
+    ];
+    final List<String> selectedSkills = [];
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          width: 400,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Header with role icon and close button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6C63FF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 500,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2D2D2D),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with role icon and close button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6C63FF).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                role == 'client' ? Icons.business :
+                                role == 'freelancer' ? Icons.work :
+                                Icons.admin_panel_settings,
+                                color: const Color(0xFF6C63FF),
+                                size: 24,
+                              ),
                             ),
-                            child: Icon(
-                              role == 'client' ? Icons.business :
-                              role == 'freelancer' ? Icons.work :
-                              Icons.admin_panel_settings,
-                              color: const Color(0xFF6C63FF),
-                              size: 24,
+                            const SizedBox(width: 12),
+                            Text(
+                              'Complete Your Profile',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Complete Your Profile',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Progress indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildStepIndicator(context, 1, 'Personal Info', currentStep >= 0),
+                        _buildStepConnector(context, currentStep > 0),
+                        _buildStepIndicator(context, 2, role == 'client' ? 'Company Info' : 'Professional Info', currentStep >= 1),
+                        if (role == 'client') ...[
+                          _buildStepConnector(context, currentStep > 1),
+                          _buildStepIndicator(context, 3, 'Additional Info', currentStep >= 2),
                         ],
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    // Form steps
+                    if (currentStep == 0) ...[
+                      // Personal Information Step
+                      TextFormField(
+                        controller: nameController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Full Name',
+                          labelStyle: TextStyle(color: Colors.grey[400]),
+                          prefixIcon: Icon(Icons.person_outline, color: Colors.grey[400]),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[700]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          errorStyle: const TextStyle(color: Colors.redAccent),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your name';
+                          }
+                          return null;
+                        },
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: emailController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          labelStyle: TextStyle(color: Colors.grey[400]),
+                          prefixIcon: Icon(Icons.email_outlined, color: Colors.grey[400]),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[700]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          errorStyle: const TextStyle(color: Colors.redAccent),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: phoneController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Phone Number',
+                          labelStyle: TextStyle(color: Colors.grey[400]),
+                          prefixIcon: Icon(Icons.phone_outlined, color: Colors.grey[400]),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[700]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          errorStyle: const TextStyle(color: Colors.redAccent),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your phone number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: locationController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Location',
+                          labelStyle: TextStyle(color: Colors.grey[400]),
+                          prefixIcon: Icon(Icons.location_on_outlined, color: Colors.grey[400]),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[700]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          errorStyle: const TextStyle(color: Colors.redAccent),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your location';
+                          }
+                          return null;
+                        },
+                      ),
+                    ] else if (currentStep == 1) ...[
+                      if (role == 'client') ...[
+                        // Company Information Step for Client
+                        TextFormField(
+                          controller: companyNameController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Company Name',
+                            labelStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: Icon(Icons.business, color: Colors.grey[400]),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF1A1A1A),
+                            errorStyle: const TextStyle(color: Colors.redAccent),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter company name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: companySizeController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Company Size',
+                            labelStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: Icon(Icons.people_outline, color: Colors.grey[400]),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF1A1A1A),
+                            errorStyle: const TextStyle(color: Colors.redAccent),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter company size';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: industryController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Industry',
+                            labelStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: Icon(Icons.work_outline, color: Colors.grey[400]),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF1A1A1A),
+                            errorStyle: const TextStyle(color: Colors.redAccent),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter industry';
+                            }
+                            return null;
+                          },
+                        ),
+                      ] else ...[
+                        // Professional Information Step for Freelancer
+                        TextFormField(
+                          controller: titleController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Professional Title',
+                            labelStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: Icon(Icons.work_outline, color: Colors.grey[400]),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF1A1A1A),
+                            errorStyle: const TextStyle(color: Colors.redAccent),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your professional title';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        // Skills Selection
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Skills',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1A1A1A),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[700]!),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: availableSkills.map((skill) {
+                                      final isSelected = selectedSkills.contains(skill);
+                                      return FilterChip(
+                                        label: Text(
+                                          skill,
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.white : Colors.grey[400],
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        selected: isSelected,
+                                        onSelected: (selected) {
+                                          setState(() {
+                                            if (selected) {
+                                              selectedSkills.add(skill);
+                                            } else {
+                                              selectedSkills.remove(skill);
+                                            }
+                                          });
+                                        },
+                                        backgroundColor: const Color(0xFF2D2D2D),
+                                        selectedColor: const Color(0xFF6C63FF),
+                                        checkmarkColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                          side: BorderSide(
+                                            color: isSelected ? const Color(0xFF6C63FF) : Colors.grey[700]!,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                  if (selectedSkills.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        'Please select at least one skill',
+                                        style: TextStyle(
+                                          color: Colors.redAccent[200],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Experience in Years
+                        TextFormField(
+                          controller: experienceController,
+                          style: const TextStyle(color: Colors.white),
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Years of Experience',
+                            labelStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: Icon(Icons.history, color: Colors.grey[400]),
+                            suffixText: 'years',
+                            suffixStyle: TextStyle(color: Colors.grey[400]),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF1A1A1A),
+                            errorStyle: const TextStyle(color: Colors.redAccent),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your years of experience';
+                            }
+                            final years = int.tryParse(value);
+                            if (years == null || years < 0) {
+                              return 'Please enter a valid number of years';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        // Hourly Rate
+                        TextFormField(
+                          controller: hourlyRateController,
+                          style: const TextStyle(color: Colors.white),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Hourly Rate',
+                            labelStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: Icon(Icons.attach_money, color: Colors.grey[400]),
+                            suffixText: 'USD',
+                            suffixStyle: TextStyle(color: Colors.grey[400]),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[700]!),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF1A1A1A),
+                            errorStyle: const TextStyle(color: Colors.redAccent),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your hourly rate';
+                            }
+                            final rate = double.tryParse(value);
+                            if (rate == null || rate <= 0) {
+                              return 'Please enter a valid hourly rate';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ] else if (currentStep == 2 && role == 'client') ...[
+                      // Additional Information Step for Client
+                      TextFormField(
+                        controller: websiteController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Website',
+                          labelStyle: TextStyle(color: Colors.grey[400]),
+                          prefixIcon: Icon(Icons.language, color: Colors.grey[400]),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[700]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          errorStyle: const TextStyle(color: Colors.redAccent),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your website';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: bioController,
+                        style: const TextStyle(color: Colors.white),
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: 'Company Bio',
+                          labelStyle: TextStyle(color: Colors.grey[400]),
+                          prefixIcon: Icon(Icons.description_outlined, color: Colors.grey[400]),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[700]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF6C63FF)),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          errorStyle: const TextStyle(color: Colors.redAccent),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter company bio';
+                          }
+                          return null;
+                        },
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Name field
-                  TextFormField(
-                    controller: nameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Full Name',
-                      labelStyle: TextStyle(color: Colors.grey[400]),
-                      prefixIcon: Icon(Icons.person_outline, color: Colors.grey[400]),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[700]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF1A1A1A),
-                      errorStyle: const TextStyle(color: Colors.redAccent),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your name';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Phone field
-                  TextFormField(
-                    controller: phoneController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Phone Number',
-                      labelStyle: TextStyle(color: Colors.grey[400]),
-                      prefixIcon: Icon(Icons.phone_outlined, color: Colors.grey[400]),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[700]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF1A1A1A),
-                      errorStyle: const TextStyle(color: Colors.redAccent),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your phone number';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Bio field
-                  TextFormField(
-                    controller: bioController,
-                    style: const TextStyle(color: Colors.white),
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: 'Bio',
-                      labelStyle: TextStyle(color: Colors.grey[400]),
-                      prefixIcon: Icon(Icons.description_outlined, color: Colors.grey[400]),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[700]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFF1A1A1A),
-                      errorStyle: const TextStyle(color: Colors.redAccent),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your bio';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Role-specific fields
-                  if (role == 'freelancer') ...[
-                    TextFormField(
-                      controller: skillsController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Skills (comma-separated)',
-                        labelStyle: TextStyle(color: Colors.grey[400]),
-                        prefixIcon: Icon(Icons.code, color: Colors.grey[400]),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[700]!),
+                    const SizedBox(height: 32),
+                    // Navigation buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (currentStep > 0)
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                currentStep--;
+                              });
+                            },
+                            child: Text(
+                              'Back',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        else
+                          const SizedBox(width: 80),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (formKey.currentState!.validate()) {
+                              if (currentStep < (role == 'client' ? 2 : 1)) {
+                                setState(() {
+                                  currentStep++;
+                                });
+                              } else {
+                                // TODO: Implement profile creation logic here
+                                Navigator.pop(context);
+                                _handleLogin(role);
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6C63FF),
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            currentStep < (role == 'client' ? 2 : 1) ? 'Next' : 'Complete Profile',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1A1A1A),
-                        errorStyle: const TextStyle(color: Colors.redAccent),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your skills';
-                        }
-                        return null;
-                      },
-                    ),
-                  ] else if (role == 'client') ...[
-                    TextFormField(
-                      controller: companyController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Company Name',
-                        labelStyle: TextStyle(color: Colors.grey[400]),
-                        prefixIcon: Icon(Icons.business, color: Colors.grey[400]),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[700]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1A1A1A),
-                        errorStyle: const TextStyle(color: Colors.redAccent),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your company name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: websiteController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Website',
-                        labelStyle: TextStyle(color: Colors.grey[400]),
-                        prefixIcon: Icon(Icons.language, color: Colors.grey[400]),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[700]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF6C63FF)),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1A1A1A),
-                        errorStyle: const TextStyle(color: Colors.redAccent),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your website';
-                        }
-                        return null;
-                      },
+                      ],
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  // Complete Profile button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          // TODO: Implement profile creation logic here
-                          Navigator.pop(context);
-                          _handleLogin(role);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6C63FF),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Complete Profile',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStepIndicator(BuildContext context, int step, String label, bool isCompleted) {
+    return Column(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isCompleted ? const Color(0xFF6C63FF) : Colors.grey[700],
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              step.toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: isCompleted ? const Color(0xFF6C63FF) : Colors.grey[400],
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepConnector(BuildContext context, bool isCompleted) {
+    return Container(
+      width: 50,
+      height: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      color: isCompleted ? const Color(0xFF6C63FF) : Colors.grey[700],
     );
   }
 
