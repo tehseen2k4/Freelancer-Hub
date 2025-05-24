@@ -786,26 +786,33 @@ class _ModernNavbarState extends State<ModernNavbar> with SingleTickerProviderSt
       _userRole = role;
     });
     
-    // Navigate to the appropriate dashboard
-    Widget dashboard;
+    // Navigate to the appropriate dashboard based on role
     switch (role) {
       case 'client':
-        dashboard = const ClientDashboard();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ClientDashboard(),
+          ),
+        );
         break;
       case 'freelancer':
-        dashboard = const FreelancerDashboard();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const FreelancerDashboard(),
+          ),
+        );
         break;
       case 'admin':
-        dashboard = const AdminDashboard();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AdminDashboard(),
+          ),
+        );
         break;
-      default:
-        return;
     }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => dashboard),
-    );
   }
 
   void _navigateToFindWork() {

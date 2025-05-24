@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../layouts/dashboard_layout.dart';
+import '../layouts/admin_dashboard_layout.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return DashboardLayout(
+    return AdminDashboardLayout(
       title: 'Admin Dashboard',
       userRole: 'Administrator',
       userName: 'John Doe',

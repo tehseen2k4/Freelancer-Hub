@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../layouts/dashboard_layout.dart';
+import '../layouts/client_dashboard_layout.dart';
 
 class ClientProjects extends StatelessWidget {
   final int selectedIndex;
@@ -11,7 +11,7 @@ class ClientProjects extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DashboardLayout(
+    return ClientDashboardLayout(
       title: 'My Projects',
       userRole: 'Client',
       userName: 'John Doe',

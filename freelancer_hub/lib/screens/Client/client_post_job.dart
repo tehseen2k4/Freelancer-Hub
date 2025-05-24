@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../layouts/dashboard_layout.dart';
+import '../layouts/client_dashboard_layout.dart';
 
 class ClientPostJob extends StatefulWidget {
   final int selectedIndex;
@@ -69,7 +69,7 @@ class _ClientPostJobState extends State<ClientPostJob> {
 
   @override
   Widget build(BuildContext context) {
-    return DashboardLayout(
+    return ClientDashboardLayout(
       title: 'Post a Job',
       userRole: 'Client',
       userName: 'John Doe',

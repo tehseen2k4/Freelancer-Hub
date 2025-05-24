@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../layouts/dashboard_layout.dart';
+import '../layouts/client_dashboard_layout.dart';
 import 'client_post_job.dart';
 
 class ClientDashboard extends StatelessWidget {
@@ -7,7 +7,7 @@ class ClientDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DashboardLayout(
+    return ClientDashboardLayout(
       title: 'Client Dashboard',
       userRole: 'Client',
       userName: 'John Doe',

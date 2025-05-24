@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import '../layouts/client_dashboard_layout.dart';
+import '../layouts/freelancer_dashboard_layout.dart';
 
-class ClientMessages extends StatefulWidget {
+class FreelancerMessages extends StatefulWidget {
   final int selectedIndex;
 
-  const ClientMessages({
+  const FreelancerMessages({
     super.key,
     this.selectedIndex = 3,
   });
 
   @override
-  State<ClientMessages> createState() => _ClientMessagesState();
+  State<FreelancerMessages> createState() => _FreelancerMessagesState();
 }
 
-class _ClientMessagesState extends State<ClientMessages> {
+class _FreelancerMessagesState extends State<FreelancerMessages> {
   final List<Map<String, dynamic>> _conversations = [
     {
       'name': 'Sarah Johnson',
-      'role': 'UI/UX Designer',
+      'role': 'Client',
       'rating': '4.9',
       'lastMessage': 'Latest updates on the project...',
       'time': '2m ago',
@@ -27,7 +27,7 @@ class _ClientMessagesState extends State<ClientMessages> {
     },
     {
       'name': 'Mike Chen',
-      'role': 'Web Developer',
+      'role': 'Client',
       'rating': '4.8',
       'lastMessage': 'I\'ve completed the frontend...',
       'time': '1h ago',
@@ -37,7 +37,7 @@ class _ClientMessagesState extends State<ClientMessages> {
     },
     {
       'name': 'Alex Brown',
-      'role': 'Mobile Developer',
+      'role': 'Client',
       'rating': '4.7',
       'lastMessage': 'The app is ready for testing...',
       'time': '3h ago',
@@ -47,7 +47,7 @@ class _ClientMessagesState extends State<ClientMessages> {
     },
     {
       'name': 'Emma Wilson',
-      'role': 'Graphic Designer',
+      'role': 'Client',
       'rating': '4.9',
       'lastMessage': 'I\'ve sent the logo designs...',
       'time': '5h ago',
@@ -57,7 +57,7 @@ class _ClientMessagesState extends State<ClientMessages> {
     },
     {
       'name': 'David Lee',
-      'role': 'Backend Developer',
+      'role': 'Client',
       'rating': '4.8',
       'lastMessage': 'API integration is complete...',
       'time': '1d ago',
@@ -69,9 +69,9 @@ class _ClientMessagesState extends State<ClientMessages> {
 
   @override
   Widget build(BuildContext context) {
-    return ClientDashboardLayout(
+    return FreelancerDashboardLayout(
       title: 'Messages',
-      userRole: 'Client',
+      userRole: 'Freelancer',
       userName: 'John Doe',
       initialSelectedIndex: widget.selectedIndex,
       content: Column(

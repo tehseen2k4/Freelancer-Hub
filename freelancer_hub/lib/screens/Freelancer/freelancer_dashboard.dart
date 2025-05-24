@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import '../layouts/dashboard_layout.dart';
+import '../layouts/freelancer_dashboard_layout.dart';
 
 class FreelancerDashboard extends StatelessWidget {
   const FreelancerDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return DashboardLayout(
-      title: 'Freelancer Dashboard',
+    return FreelancerDashboardLayout(
+      title: 'Dashboard',
       userRole: 'Freelancer',
       userName: 'John Doe',
+      initialSelectedIndex: 0,
       content: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(

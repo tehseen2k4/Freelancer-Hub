@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
-import '../layouts/client_dashboard_layout.dart';
+import '../layouts/freelancer_dashboard_layout.dart';
 
-class ClientProfile extends StatelessWidget {
+class FreelancerProfile extends StatefulWidget {
   final int selectedIndex;
-  
-  const ClientProfile({
+
+  const FreelancerProfile({
     super.key,
-    this.selectedIndex = 1, // Default to profile index
+    required this.selectedIndex,
   });
 
   @override
+  State<FreelancerProfile> createState() => _FreelancerProfileState();
+}
+
+class _FreelancerProfileState extends State<FreelancerProfile> {
+  @override
   Widget build(BuildContext context) {
-    return ClientDashboardLayout(
+    return FreelancerDashboardLayout(
       title: 'My Profile',
-      userRole: 'Client',
+      userRole: 'Freelancer',
       userName: 'John Doe',
-      initialSelectedIndex: selectedIndex,
+      initialSelectedIndex: widget.selectedIndex,
       content: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -78,11 +83,11 @@ class ClientProfile extends StatelessWidget {
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            _buildProfileStat('12', 'Projects'),
+                            _buildProfileStat('50+', 'Projects'),
                             const SizedBox(width: 24),
-                            _buildProfileStat('8', 'Freelancers'),
+                            _buildProfileStat('4.9', 'Rating'),
                             const SizedBox(width: 24),
-                            _buildProfileStat('4.8', 'Rating'),
+                            _buildProfileStat('3+', 'Years'),
                           ],
                         ),
                       ],
@@ -109,9 +114,9 @@ class ClientProfile extends StatelessWidget {
               _buildInfoRow('Member Since', 'January 2024'),
             ]),
             const SizedBox(height: 32),
-            // Company Information
+            // Professional Information
             Text(
-              'Company Information',
+              'Professional Information',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -119,10 +124,10 @@ class ClientProfile extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildInfoCard([
-              _buildInfoRow('Company Name', 'Tech Solutions Inc.'),
-              _buildInfoRow('Industry', 'Information Technology'),
-              _buildInfoRow('Company Size', '50-100 employees'),
-              _buildInfoRow('Website', 'www.techsolutions.com'),
+              _buildInfoRow('Title', 'Senior Flutter Developer'),
+              _buildInfoRow('Skills', 'Flutter, Dart, Firebase, REST APIs'),
+              _buildInfoRow('Experience', '3+ years'),
+              _buildInfoRow('Hourly Rate', '\$50/hour'),
             ]),
             const SizedBox(height: 32),
             // Account Settings

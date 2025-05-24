@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import '../Homepages/home_screen.dart';
-import '../Client/client_profile.dart';
-import '../Client/client_projects.dart';
-import '../Client/client_settings.dart';
-import '../Client/client_messages.dart';
-import '../Client/client_dashboard.dart';
-import '../Client/client_post_job.dart';
+import '../Freelancer/freelancer_profile.dart';
+import '../Freelancer/freelancer_projects.dart';
+import '../Freelancer/freelancer_settings.dart';
+import '../Freelancer/freelancer_messages.dart';
+import '../Freelancer/freelancer_dashboard.dart';
 
-class DashboardLayout extends StatefulWidget {
+class FreelancerDashboardLayout extends StatefulWidget {
   final Widget content;
   final String title;
   final String userRole;
   final String userName;
   final int initialSelectedIndex;
 
-  const DashboardLayout({
+  const FreelancerDashboardLayout({
     super.key,
     required this.content,
     required this.title,
@@ -24,10 +23,10 @@ class DashboardLayout extends StatefulWidget {
   });
 
   @override
-  State<DashboardLayout> createState() => _DashboardLayoutState();
+  State<FreelancerDashboardLayout> createState() => _FreelancerDashboardLayoutState();
 }
 
-class _DashboardLayoutState extends State<DashboardLayout> {
+class _FreelancerDashboardLayoutState extends State<FreelancerDashboardLayout> {
   bool _isSidebarCollapsed = false;
   late int _selectedIndex;
 
@@ -152,7 +151,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const ClientDashboard(),
+            builder: (context) => const FreelancerDashboard(),
           ),
         );
         break;
@@ -160,7 +159,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ClientProfile(selectedIndex: index),
+            builder: (context) => FreelancerProfile(selectedIndex: index),
           ),
         );
         break;
@@ -168,7 +167,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ClientProjects(selectedIndex: index),
+            builder: (context) => FreelancerProjects(selectedIndex: index),
           ),
         );
         break;
@@ -176,7 +175,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ClientMessages(selectedIndex: index),
+            builder: (context) => FreelancerMessages(selectedIndex: index),
           ),
         );
         break;
@@ -184,15 +183,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ClientSettings(selectedIndex: index),
-          ),
-        );
-        break;
-      case 6: // Post Job
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ClientPostJob(selectedIndex: index),
+            builder: (context) => FreelancerSettings(selectedIndex: index),
           ),
         );
         break;
@@ -315,12 +306,6 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                                   title: 'Projects',
                                   index: 2,
                                   onTap: () => _handleNavigation(2),
-                                ),
-                                _buildNavItem(
-                                  icon: Icons.post_add,
-                                  title: 'Post a Job',
-                                  index: 6,
-                                  onTap: () => _handleNavigation(6),
                                 ),
                                 _buildNavItem(
                                   icon: Icons.message,
