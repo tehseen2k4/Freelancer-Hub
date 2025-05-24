@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "686749222872",
+    "project_id": "freelancerhub-cad60",
+    "storage_bucket": "freelancerhub-cad60.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:686749222872:android:89bcabb55f41b8d7da94ad",
+        "android_client_info": {
+          "package_name": "com.example.freelancer_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTd5cRhght5c4uBf62QFOEBwNzu-gsEcE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
