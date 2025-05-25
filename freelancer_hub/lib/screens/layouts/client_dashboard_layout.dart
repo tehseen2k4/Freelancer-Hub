@@ -6,6 +6,7 @@ import '../Client/client_settings.dart';
 import '../Client/client_messages.dart';
 import '../Client/client_dashboard.dart';
 import '../Client/client_post_job.dart';
+import '../../services/auth_service.dart';
 
 class ClientDashboardLayout extends StatefulWidget {
   final Widget content;
@@ -108,12 +109,18 @@ class _ClientDashboardLayoutState extends State<ClientDashboardLayout> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Close dialog
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
-                      );
+                    onPressed: () async {
+                      // Clear the user state before navigating
+                      final authService = AuthService();
+                      await authService.signOut();
+                      if (mounted) {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const HomeScreen()),
+                          (route) => false, // Remove all previous routes
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6C63FF),

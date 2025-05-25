@@ -5,6 +5,7 @@ import '../Freelancer/freelancer_projects.dart';
 import '../Freelancer/freelancer_settings.dart';
 import '../Freelancer/freelancer_messages.dart';
 import '../Freelancer/freelancer_dashboard.dart';
+import '../../services/auth_service.dart';
 
 class FreelancerDashboardLayout extends StatefulWidget {
   final Widget content;
@@ -107,12 +108,18 @@ class _FreelancerDashboardLayoutState extends State<FreelancerDashboardLayout> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Close dialog
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
-                      );
+                    onPressed: () async {
+                      // Clear the user state before navigating
+                      final authService = AuthService();
+                      await authService.signOut();
+                      if (mounted) {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const HomeScreen()),
+                          (route) => false, // Remove all previous routes
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6C63FF),

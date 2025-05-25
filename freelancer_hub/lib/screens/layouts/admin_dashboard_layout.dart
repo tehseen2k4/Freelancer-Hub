@@ -4,6 +4,7 @@ import '../Admin/admin_dashboard.dart';
 import '../Admin/admin_users.dart';
 import '../Admin/admin_reports.dart';
 import '../Admin/admin_settings.dart';
+import '../../services/auth_service.dart';
 
 class AdminDashboardLayout extends StatefulWidget {
   final Widget content;
@@ -106,12 +107,18 @@ class _AdminDashboardLayoutState extends State<AdminDashboardLayout> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
-                      );
+                    onPressed: () async {
+                      // Clear the user state before navigating
+                      final authService = AuthService();
+                      await authService.signOut();
+                      if (mounted) {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const HomeScreen()),
+                          (route) => false,
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6C63FF),

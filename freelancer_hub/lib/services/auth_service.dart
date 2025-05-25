@@ -51,7 +51,18 @@ class AuthService {
         throw Exception('Invalid user role');
       }
 
-      return UserModel.fromMap(userData);
+      // Update lastLoginAt
+      await _firestore.collection('users').doc(userCredential.user!.uid).update({
+        'lastLoginAt': Timestamp.now(),
+      });
+
+      // Create updated user model
+      final updatedUserData = {
+        ...userData,
+        'lastLoginAt': Timestamp.now(),
+      };
+
+      return UserModel.fromMap(updatedUserData);
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'user-not-found':
